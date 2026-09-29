@@ -6,9 +6,13 @@
 
 **Status:** ready-for-agent
 
-- [ ] `polls`, `options`(position 포함) 스키마 SQL이 있고 `npm run db:init`로 Neon에 생성된다
-- [ ] 질문·선택지를 공백 정리 후 저장하고 id를 돌려준다
-- [ ] 빈 질문, 선택지 2개 미만/5개 초과, 빈 선택지, 중복 선택지는 거부된다
-- [ ] `POST /api/polls`가 201 `{ id }` / 400 `{ error }`를 돌려준다
-- [ ] `/` 는 최신순 목록과 빈 상태 안내, `/new` 는 입력 폼(칸 추가·삭제)과 에러 표시를 보여준다
-- [ ] 생성 후 `/polls/[id]`로 이동한다
+- [x] `polls`, `options`(position 포함) 스키마 SQL이 있고 `npm run db:init`로 Neon에 생성된다
+- [x] 질문·선택지를 공백 정리 후 저장하고 id를 돌려준다
+- [x] 빈 질문, 선택지 2개 미만/5개 초과, 빈 선택지, 중복 선택지는 거부된다
+- [x] `POST /api/polls`가 201 `{ id }` / 400 `{ error }`를 돌려준다
+- [x] `/` 는 최신순 목록과 빈 상태 안내, `/new` 는 입력 폼(칸 추가·삭제)과 에러 표시를 보여준다
+- [x] 생성 후 `/polls/[id]`로 이동한다
+
+## Comments
+
+- 구현 완료. `npm test` 18개 통과, 로컬 API/페이지 스모크 테스트 통과.
