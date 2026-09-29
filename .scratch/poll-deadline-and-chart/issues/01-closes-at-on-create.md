@@ -6,7 +6,11 @@
 
 **Status:** ready-for-agent
 
-- [ ] `polls.closes_at`(nullable) 마이그레이션이 `npm run db:init`로 적용된다
-- [ ] 마감 시각 없이 만든 투표·기존 투표는 closesAt null, isClosed false
-- [ ] 과거 시각·잘못된 형식은 ValidationError(400)
-- [ ] 생성 폼에 선택 입력칸, 목록·투표 화면에 한국 시간으로 표시
+- [x] `polls.closes_at`(nullable) 마이그레이션이 `npm run db:init`로 적용된다
+- [x] 마감 시각 없이 만든 투표·기존 투표는 closesAt null, isClosed false
+- [x] 과거 시각·잘못된 형식은 ValidationError(400)
+- [x] 생성 폼에 선택 입력칸, 목록·투표 화면에 한국 시간으로 표시
+
+## Comments
+
+- 구현 완료. `npm test` 23개 통과, 로컬 API/페이지 스모크 테스트(마감 전 200 → 마감 후 409) 통과.

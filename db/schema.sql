@@ -13,3 +13,6 @@ create table if not exists options (
 );
 
 create index if not exists options_poll_id_idx on options (poll_id);
+
+-- 부록: 마감 시각 (nullable, 기존 투표는 무기한)
+alter table polls add column if not exists closes_at timestamptz;

@@ -15,8 +15,11 @@ export async function POST(request: Request, ctx: RouteContext<"/api/polls/[id]/
     return Response.json({ error: "선택지를 골라 주세요." }, { status: 400 });
   }
 
-  const counted = await castVote(getDb(), id, optionId);
-  if (!counted) {
+  const outcome = await castVote(getDb(), id, optionId);
+  if (outcome === "closed") {
+    return Response.json({ error: "마감된 투표입니다." }, { status: 409 });
+  }
+  if (outcome === "not_found") {
     return Response.json({ error: "투표 또는 선택지를 찾을 수 없습니다." }, { status: 404 });
   }
   return Response.json({ ok: true });

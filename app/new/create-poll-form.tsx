@@ -8,6 +8,7 @@ export default function CreatePollForm() {
   const router = useRouter();
   const [question, setQuestion] = useState("");
   const [options, setOptions] = useState<string[]>(["", ""]);
+  const [closesAtLocal, setClosesAtLocal] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -23,7 +24,12 @@ export default function CreatePollForm() {
       const res = await fetch("/api/polls", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question, options }),
+        body: JSON.stringify({
+          question,
+          options,
+          // datetime-local 값은 브라우저 시간대로 해석해 ISO(UTC)로 보낸다
+          closesAt: closesAtLocal ? new Date(closesAtLocal).toISOString() : null,
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -89,6 +95,21 @@ export default function CreatePollForm() {
           </button>
         )}
       </fieldset>
+
+      <label className="block">
+        <span className="mb-1 block font-medium">
+          마감 시각 <span className="text-sm font-normal text-black/50 dark:text-white/50">(선택)</span>
+        </span>
+        <input
+          type="datetime-local"
+          value={closesAtLocal}
+          onChange={(e) => setClosesAtLocal(e.target.value)}
+          className="rounded-md border border-black/20 bg-transparent px-3 py-2 dark:border-white/25 dark:[color-scheme:dark]"
+        />
+        <span className="mt-1 block text-sm text-black/50 dark:text-white/50">
+          비워두면 마감 없이 계속 열려 있어요.
+        </span>
+      </label>
 
       {error && (
         <p role="alert" className="text-red-600">

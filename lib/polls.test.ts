@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createTestDb } from "./test-db.ts";
+import type { Db } from "./db-types.ts";
 import { castVote, createPoll, getPoll, getResults, listPolls, ValidationError, type NewPoll } from "./polls.ts";
 
 test("투표를 만들면 목록에 질문이 보인다", async () => {
@@ -73,7 +74,7 @@ test("표를 던지면 그 선택지의 득표수만 1 오른다", async () => {
   const db = await createTestDb();
   const id = await createPoll(db, { question: "q", options: ["치킨", "피자"] });
   const [chicken] = (await getPoll(db, id))!.options;
-  assert.equal(await castVote(db, id, chicken.id), true);
+  assert.equal(await castVote(db, id, chicken.id), "ok");
   const poll = await getPoll(db, id);
   assert.deepEqual(poll!.options.map((o) => [o.label, o.voteCount]), [["치킨", 1], ["피자", 0]]);
 });
@@ -91,9 +92,9 @@ test("다른 투표의 선택지나 없는 선택지로는 표가 들어가지 �
   const first = await createPoll(db, { question: "1", options: ["a", "b"] });
   const second = await createPoll(db, { question: "2", options: ["c", "d"] });
   const [otherOption] = (await getPoll(db, second))!.options;
-  assert.equal(await castVote(db, first, otherOption.id), false);
-  assert.equal(await castVote(db, first, "00000000-0000-4000-8000-000000000000"), false);
-  assert.equal(await castVote(db, first, "nope"), false);
+  assert.equal(await castVote(db, first, otherOption.id), "not_found");
+  assert.equal(await castVote(db, first, "00000000-0000-4000-8000-000000000000"), "not_found");
+  assert.equal(await castVote(db, first, "nope"), "not_found");
   const all = [...(await getPoll(db, first))!.options, ...(await getPoll(db, second))!.options];
   assert.ok(all.every((o) => o.voteCount === 0));
 });
@@ -125,4 +126,53 @@ test("표가 없으면 모두 0표 0%", async () => {
 test("없는 투표의 결과는 null", async () => {
   const db = await createTestDb();
   assert.equal(await getResults(db, "00000000-0000-4000-8000-000000000000"), null);
+});
+
+async function closeNow(db: Db, pollId: string) {
+  await db.query(`update polls set closes_at = now() - interval '1 minute' where id = $1`, [pollId]);
+}
+
+test("마감 시각 없이 만든 투표는 열려 있다", async () => {
+  const db = await createTestDb();
+  const id = await createPoll(db, { question: "q", options: ["a", "b"] });
+  const poll = await getPoll(db, id);
+  assert.equal(poll!.closesAt, null);
+  assert.equal(poll!.isClosed, false);
+  assert.equal((await listPolls(db))[0].isClosed, false);
+});
+
+test("미래 마감 시각을 저장하고 아직 열려 있다", async () => {
+  const db = await createTestDb();
+  const closesAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+  const id = await createPoll(db, { question: "q", options: ["a", "b"], closesAt });
+  const poll = await getPoll(db, id);
+  assert.equal(poll!.closesAt, closesAt);
+  assert.equal(poll!.isClosed, false);
+});
+
+for (const [name, closesAt] of [
+  ["과거 마감 시각", new Date(Date.now() - 60 * 1000).toISOString()],
+  ["날짜가 아닌 마감 시각", "내일쯤"],
+]) {
+  test(`${name}이면 투표를 만들지 않는다`, async () => {
+    const db = await createTestDb();
+    await assert.rejects(createPoll(db, { question: "q", options: ["a", "b"], closesAt }), ValidationError);
+    assert.equal((await listPolls(db)).length, 0);
+  });
+}
+
+test("마감이 지나면 마감된 투표가 되고 표를 거부한다", async () => {
+  const db = await createTestDb();
+  const id = await createPoll(db, {
+    question: "q",
+    options: ["a", "b"],
+    closesAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+  });
+  const [a] = (await getPoll(db, id))!.options;
+  assert.equal(await castVote(db, id, a.id), "ok");
+  await closeNow(db, id);
+  assert.equal((await getPoll(db, id))!.isClosed, true);
+  assert.equal(await castVote(db, id, a.id), "closed");
+  assert.equal((await getResults(db, id))!.options[0].voteCount, 1);
+  assert.equal((await listPolls(db))[0].isClosed, true);
 });

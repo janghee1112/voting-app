@@ -9,11 +9,16 @@ export async function POST(request: Request) {
     return Response.json({ error: "요청 형식이 올바르지 않습니다." }, { status: 400 });
   }
 
-  const { question, options } = (body ?? {}) as { question?: unknown; options?: unknown };
+  const { question, options, closesAt } = (body ?? {}) as {
+    question?: unknown;
+    options?: unknown;
+    closesAt?: unknown;
+  };
   try {
     const id = await createPoll(getDb(), {
       question: question as string,
       options: options as string[],
+      closesAt: closesAt as string | null | undefined,
     });
     return Response.json({ id }, { status: 201 });
   } catch (error) {
