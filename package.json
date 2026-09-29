@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node --experimental-strip-types --test lib/polls.test.ts",
+    "db:init": "node --env-file=.env.local scripts/db-init.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
@@ -15,6 +17,7 @@
     "react-dom": "19.2.8"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
