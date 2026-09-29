@@ -60,3 +60,49 @@ export async function listPolls(db: Db): Promise<PollSummary[]> {
     createdAt: new Date(r.created_at).toISOString(),
   }));
 }
+
+export type PollOption = { id: string; label: string; voteCount: number };
+
+export type Poll = PollSummary & { options: PollOption[] };
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** 투표 하나와 선택지(입력 순서)를 돌려준다. 없거나 id 형식이 틀리면 null. */
+export async function getPoll(db: Db, pollId: string): Promise<Poll | null> {
+  if (!UUID.test(pollId)) return null;
+  const rows = await db.query<{
+    id: string;
+    question: string;
+    created_at: Date | string;
+    option_id: string;
+    label: string;
+    vote_count: number;
+  }>(
+    `select p.id, p.question, p.created_at, o.id as option_id, o.label, o.vote_count
+     from polls p
+     join options o on o.poll_id = p.id
+     where p.id = $1
+     order by o.position`,
+    [pollId],
+  );
+  if (rows.length === 0) return null;
+  const [first] = rows;
+  return {
+    id: first.id,
+    question: first.question,
+    createdAt: new Date(first.created_at).toISOString(),
+    options: rows.map((r) => ({ id: r.option_id, label: r.label, voteCount: Number(r.vote_count) })),
+  };
+}
+
+/** 선택지의 득표수를 원자적으로 1 올린다. 그 투표의 선택지가 아니면 false. */
+export async function castVote(db: Db, pollId: string, optionId: string): Promise<boolean> {
+  if (!UUID.test(pollId) || !UUID.test(optionId)) return false;
+  const rows = await db.query<{ id: string }>(
+    `update options set vote_count = vote_count + 1
+     where id = $1 and poll_id = $2
+     returning id`,
+    [optionId, pollId],
+  );
+  return rows.length === 1;
+}
