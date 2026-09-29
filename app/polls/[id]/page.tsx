@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getDb } from "@/lib/db";
 import { formatKst } from "@/lib/format";
 import { getPoll } from "@/lib/polls";
+import DeletePoll from "./delete-poll";
 import VoteForm from "./vote-form";
 
 export default async function PollPage(props: PageProps<"/polls/[id]">) {
@@ -33,6 +34,9 @@ export default async function PollPage(props: PageProps<"/polls/[id]">) {
           {poll.isClosed ? "결과 보기" : "투표하지 않고 결과 보기"}
         </Link>
       </p>
+      <div className="mt-12 border-t border-black/10 pt-6 dark:border-white/15">
+        <DeletePoll pollId={poll.id} />
+      </div>
     </div>
   );
 }

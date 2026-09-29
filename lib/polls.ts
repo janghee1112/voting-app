@@ -164,3 +164,12 @@ export async function getResults(db: Db, pollId: string): Promise<PollResults | 
     })),
   };
 }
+
+/** 투표를 삭제한다. 선택지와 득표수는 on delete cascade 로 함께 사라진다. 없으면 false. */
+export async function deletePoll(db: Db, pollId: string): Promise<boolean> {
+  if (!UUID.test(pollId)) return false;
+  const rows = await db.query<{ id: string }>(`delete from polls where id = $1 returning id`, [
+    pollId,
+  ]);
+  return rows.length === 1;
+}

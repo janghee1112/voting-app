@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createTestDb } from "./test-db.ts";
 import type { Db } from "./db-types.ts";
-import { castVote, createPoll, getPoll, getResults, listPolls, ValidationError, type NewPoll } from "./polls.ts";
+import { castVote, createPoll, deletePoll, getPoll, getResults, listPolls, ValidationError, type NewPoll } from "./polls.ts";
 
 test("투표를 만들면 목록에 질문이 보인다", async () => {
   const db = await createTestDb();
@@ -175,4 +175,20 @@ test("마감이 지나면 마감된 투표가 되고 표를 거부한다", async
   assert.equal(await castVote(db, id, a.id), "closed");
   assert.equal((await getResults(db, id))!.options[0].voteCount, 1);
   assert.equal((await listPolls(db))[0].isClosed, true);
+});
+
+test("투표를 삭제하면 목록과 조회에서 사라지고 다른 투표는 남는다", async () => {
+  const db = await createTestDb();
+  const keep = await createPoll(db, { question: "남길 투표", options: ["a", "b"] });
+  const remove = await createPoll(db, { question: "지울 투표", options: ["c", "d"] });
+  assert.equal(await deletePoll(db, remove), true);
+  assert.equal(await getPoll(db, remove), null);
+  assert.deepEqual((await listPolls(db)).map((p) => p.id), [keep]);
+  assert.ok(await getPoll(db, keep));
+});
+
+test("없는 투표나 잘못된 id 삭제는 false", async () => {
+  const db = await createTestDb();
+  assert.equal(await deletePoll(db, "00000000-0000-4000-8000-000000000000"), false);
+  assert.equal(await deletePoll(db, "nope"), false);
 });

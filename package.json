@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --experimental-strip-types --test lib/polls.test.ts",
+    "test": "node --experimental-strip-types --test lib/polls.test.ts lib/operator.test.ts",
     "db:init": "node --env-file=.env.local scripts/db-init.mjs"
   },
   "dependencies": {
