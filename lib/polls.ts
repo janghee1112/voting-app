@@ -106,3 +106,22 @@ export async function castVote(db: Db, pollId: string, optionId: string): Promis
   );
   return rows.length === 1;
 }
+
+export type OptionResult = PollOption & { percent: number };
+
+export type PollResults = PollSummary & { totalVotes: number; options: OptionResult[] };
+
+/** 선택지별 득표수와 비율(정수 반올림, 표가 없으면 0%)을 돌려준다. */
+export async function getResults(db: Db, pollId: string): Promise<PollResults | null> {
+  const poll = await getPoll(db, pollId);
+  if (!poll) return null;
+  const totalVotes = poll.options.reduce((sum, o) => sum + o.voteCount, 0);
+  return {
+    ...poll,
+    totalVotes,
+    options: poll.options.map((o) => ({
+      ...o,
+      percent: totalVotes === 0 ? 0 : Math.round((o.voteCount / totalVotes) * 100),
+    })),
+  };
+}

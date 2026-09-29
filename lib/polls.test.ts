@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createTestDb } from "./test-db.ts";
-import { castVote, createPoll, getPoll, listPolls, ValidationError, type NewPoll } from "./polls.ts";
+import { castVote, createPoll, getPoll, getResults, listPolls, ValidationError, type NewPoll } from "./polls.ts";
 
 test("투표를 만들면 목록에 질문이 보인다", async () => {
   const db = await createTestDb();
@@ -96,4 +96,33 @@ test("다른 투표의 선택지나 없는 선택지로는 표가 들어가지 �
   assert.equal(await castVote(db, first, "nope"), false);
   const all = [...(await getPoll(db, first))!.options, ...(await getPoll(db, second))!.options];
   assert.ok(all.every((o) => o.voteCount === 0));
+});
+
+test("결과는 선택지별 득표수와 반올림한 비율, 총 표 수를 입력 순서대로 준다", async () => {
+  const db = await createTestDb();
+  const id = await createPoll(db, { question: "q", options: ["a", "b", "c"] });
+  const [a, b] = (await getPoll(db, id))!.options;
+  await castVote(db, id, a.id);
+  await castVote(db, id, a.id);
+  await castVote(db, id, b.id);
+  const results = await getResults(db, id);
+  assert.ok(results);
+  assert.equal(results.totalVotes, 3);
+  assert.deepEqual(
+    results.options.map((o) => [o.label, o.voteCount, o.percent]),
+    [["a", 2, 67], ["b", 1, 33], ["c", 0, 0]],
+  );
+});
+
+test("표가 없으면 모두 0표 0%", async () => {
+  const db = await createTestDb();
+  const id = await createPoll(db, { question: "q", options: ["a", "b"] });
+  const results = await getResults(db, id);
+  assert.equal(results!.totalVotes, 0);
+  assert.deepEqual(results!.options.map((o) => o.percent), [0, 0]);
+});
+
+test("없는 투표의 결과는 null", async () => {
+  const db = await createTestDb();
+  assert.equal(await getResults(db, "00000000-0000-4000-8000-000000000000"), null);
 });
